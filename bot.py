@@ -1,103 +1,138 @@
-# bot.py
 import os
-import random
 import discord
+import random
 from dotenv import load_dotenv
+from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
 
 intents=discord.Intents.default()
 intents.members=True
 intents.message_content=True
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix='.', intents=intents)
 
-@client.event
+@bot.event
 async def on_ready():
-    for guild in client.guilds:
-        if guild.name == GUILD:
-            break
+    print(f'{bot.user.name} has connected to Discord!')
 
-    print(
-        f'{client.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})\n'
-    )
+@bot.command(name='start', help='Starts a game of Rock, Paper, Scissors, Lizard, Spock')
+async def start_game(ctx):
+    response = 'Let\'s play Rock, Paper, Scissors, Lizard, Spock! To go first type "first", or to go second type "second". End the game anytime by typing "end".'
+    await ctx.send(response)
 
-author = None
-choices= ['ROCK', 'PAPER', 'SCISSORS', 'LIZARD', 'SPOCK']
-@client.event
-async def on_message(message):
-    global author
-    if message.author == client.user:
-        return
+    def startCheck(m):
+        return m.author == ctx.author and m.channel == ctx.channel and m.content.lower() in ['first', 'second', 'end']
     
-    if message.content == '.gb':
-        author = message.author
-        response = 'Let\'s play Rock, Paper, Scissors, Lizard, Spock! End the game anytime by typing "end". Choose first!'
-        await message.channel.send(response)
-        return
-
-    if message.author!=author:
-        return
-    
-    if message.content == 'end':
+    firstChoice = await bot.wait_for('message', check=startCheck)
+    if firstChoice.content.lower() == 'end':
         response = 'Game ended.'
-        await message.channel.send(response)
-        author = None
+        await ctx.send(response)
         return
     
-    choice= random.choice(choices)
-    
-    if message.content.upper() == choice:
-        response= 'I choose '+ choice
-        await message.channel.send(response)
-        response= 'It\'s a draw!'
-        await message.channel.send(response)
-    elif message.content.upper() == 'ROCK':
-        response= 'I choose '+ choice
-        await message.channel.send(response)
-        if choice == 'PAPER' or choice == 'SPOCK':
-            response= 'I won!'
-            await message.channel.send(response)
-        else:
-            response= 'You won!'
-            await message.channel.send(response)
-    elif message.content.upper() == 'PAPER':
-        response= 'I choose '+ choice
-        await message.channel.send(response)
-        if choice == 'SCISSORS' or choice == 'LIZARD':
-            response= 'I won!'
-            await message.channel.send(response)
-        else:
-            response= 'You won!'
-            await message.channel.send(response)
-    elif message.content.upper() == 'SCISSORS':
-        response= 'I choose '+ choice
-        await message.channel.send(response)
-        if choice == 'ROCK' or choice == 'SPOCK':
-            response= 'I won!'
-            await message.channel.send(response)
-        else:
-            response= 'You won!'
-            await message.channel.send(response)
-    elif message.content.upper() == 'LIZARD':
-        response= 'I choose '+ choice
-        await message.channel.send(response)
-        if choice == 'ROCK' or choice == 'SCISSORS':
-            response= 'I won!'
-            await message.channel.send(response)
-        else:
-            response= 'You won!'
-            await message.channel.send(response)
-    elif message.content.upper() == 'SPOCK':
-        response= 'I choose '+ choice
-        await message.channel.send(response)
-        if choice == 'PAPER' or choice == 'LIZARD':
-            response= 'I won!'
-            await message.channel.send(response)
-        else:
-            response= 'You won!'
-            await message.channel.send(response)
-    
-client.run(TOKEN)
+    choices = ['ROCK', 'PAPER', 'SCISSORS', 'LIZARD', 'SPOCK']
+    while True:
+        if firstChoice.content.lower() == 'first':
+            response = 'Choose your move: Rock, Paper, Scissors, Lizard, Spock'
+            await ctx.send(response)
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel and m.content.upper() in choices+['END']
+            playerChoice = await bot.wait_for('message', check=check)
+            if playerChoice.content.upper() == 'END':
+                response = 'Game ended.'
+                await ctx.send(response)
+                return
+            botChoice = random.choice(choices)
+            response = 'I choose '+ botChoice
+            await ctx.send(response)
+            if playerChoice.content.upper() == botChoice:
+                response = 'It\'s a draw!'
+                await ctx.send(response)
+            elif playerChoice.content.upper() == 'ROCK':
+                if botChoice == 'PAPER' or botChoice == 'SPOCK':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'PAPER':
+                if botChoice == 'SCISSORS' or botChoice == 'LIZARD':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'SCISSORS':
+                if botChoice == 'ROCK' or botChoice == 'SPOCK':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'LIZARD':
+                if botChoice == 'ROCK' or botChoice == 'SCISSORS':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'SPOCK':
+                if botChoice == 'PAPER' or botChoice == 'LIZARD':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+        elif firstChoice.content.lower() == 'second':
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel and m.content.upper() in choices+['END']
+            botChoice = random.choice(choices)
+            response = 'I have chose. Now your turn. Choose your move: Rock, Paper, Scissors, Lizard, Spock'
+            await ctx.send(response)
+            playerChoice = await bot.wait_for('message', check=check)
+            if playerChoice.content.upper() == 'END':
+                response = 'Game ended.'
+                await ctx.send(response)
+                return
+            response = 'I choose '+ botChoice
+            await ctx.send(response)
+            if playerChoice.content.upper() == botChoice:
+                response = 'It\'s a draw!'
+                await ctx.send(response)
+            elif playerChoice.content.upper() == 'ROCK':
+                if botChoice == 'PAPER' or botChoice == 'SPOCK':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'PAPER':
+                if botChoice == 'SCISSORS' or botChoice == 'LIZARD':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'SCISSORS':
+                if botChoice == 'ROCK' or botChoice == 'SPOCK':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'LIZARD':
+                if botChoice == 'ROCK' or botChoice == 'SCISSORS':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+            elif playerChoice.content.upper() == 'SPOCK':
+                if botChoice == 'PAPER' or botChoice == 'LIZARD':
+                    response = 'I win!'
+                    await ctx.send(response)
+                else:
+                    response = 'You win!'
+                    await ctx.send(response)
+
+bot.run(TOKEN)
